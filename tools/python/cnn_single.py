@@ -21,15 +21,15 @@ LEARNING_RATE = 1e-3
 MINI_BATCH_SIZE = 100
 
 
-# function to fetch data
-def fetch_data(fashion_mnist=True, mnist=True, nu_lines=1000):
+# function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
+def fetch_data(fashion_mnist=True, mnist=True, testing=False):
 
     # get both mnist and fashion mnist
     if fashion_mnist:
     
         # load fashion mnist from file 
-        f_train_X, f_train_Y = load_file(fmnist_train_path, nu_lines)
-        f_test_X, f_test_Y = load_file(fmnist_test_path, nu_lines)
+        f_train_X, f_train_Y = load_file(fmnist_train_path, testing)
+        f_test_X, f_test_Y = load_file(fmnist_test_path, testing)
         
         X_train = f_train_X
         Y_train = f_train_Y
@@ -40,8 +40,8 @@ def fetch_data(fashion_mnist=True, mnist=True, nu_lines=1000):
     if mnist:
     
         # load mnist from file 
-        m_train_X, m_train_Y = load_file(mnist_train_path, nu_lines)
-        m_test_X, m_test_Y = load_file(mnist_test_path, nu_lines)
+        m_train_X, m_train_Y = load_file(mnist_train_path, testing)
+        m_test_X, m_test_Y = load_file(mnist_test_path, testing)
         
         X_train = m_train_X
         Y_train = m_train_Y
@@ -62,10 +62,13 @@ def fetch_data(fashion_mnist=True, mnist=True, nu_lines=1000):
 
 
 # Loads and returns the image data found at the filepath 
-def load_file(filepath, nu_lines):
+def load_file(filepath, testing):
     
     # read the image file 
-    tmp = pd.read_csv(filepath, sep=' ', nrows=nu_lines, skiprows=1).values; 
+    if testing:
+        tmp = pd.read_csv(filepath, sep=' ', skiprows=1).values; 
+    else:
+        tmp = pd.read_csv(filepath, sep=' ', nrows=1000, skiprows=1).values; 
     
     # split the data between pixel and meta 
     meta_data = tmp[:, 0:2]
@@ -97,7 +100,7 @@ def create_CNN_model():
     model.add(Conv2D(192, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 1, activation = 'relu'))
     model.add(Conv2D(20, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 2, activation = 'relu'))
     
-    # Final output softmax layer
+    # add the final output softmax layer
     model.add(Dense(20, activation ='softmax'))
     
     # set the model hyperparameters 
