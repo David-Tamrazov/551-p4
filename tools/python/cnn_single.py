@@ -1,4 +1,5 @@
 import keras
+import keras.backend as K
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
@@ -75,7 +76,7 @@ def load_file(filepath, testing):
     if testing:
         tmp = pd.read_csv(filepath, sep=' ', skiprows=1).values; 
     else:
-        tmp = pd.read_csv(filepath, sep=' ', nrows=1000, skiprows=1).values; 
+        tmp = pd.read_csv(filepath, sep=' ', nrows=10, skiprows=1).values; 
     
     # split the data between pixel and meta 
     meta_data = tmp[:, 0:2]
@@ -94,11 +95,11 @@ def load_file(filepath, testing):
 # callback function to anneal the learning rate
 def lr_scheduler(epoch):
     
-    # change the learning rate at the 26th epoch
-    if epoch == 26:
-        K.set_value(model.optimizer.lr, 1e-5)
+    # change the learning rate at the 26th epoch onwards
+    if epoch > 25:
+        return 1e-5
     
-    return K.get_value(model.optimizer.lr)
+    return 1e-3
 
 
 def create_CNN_model():
@@ -155,7 +156,7 @@ def main():
 
 
 
-
+main()
 
 
 
