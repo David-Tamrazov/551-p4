@@ -4,6 +4,8 @@ import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Conv2D, MaxPooling2D, Flatten, Dropout, BatchNormalization
 from keras.optimizers import Adam as Adam
+from keras.callbacks import LearningRateScheduler
+from keras.utils import to_categorical
 
 # filepaths to the fashion mnist data
 fmnist_train_path = '../../data/fashion_ocv/fashion_train.ocv'
@@ -18,13 +20,13 @@ mnist_test_path = '../../data/mnist_ocv/mnist_test.ocv'
 IMAGE_SIZE = 28
 EPOCHS = 50
 LEARNING_RATE = 1e-3
-MINI_BATCH_SIZE = 100
+BATCH_SIZE = 100
 
 
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
 def fetch_data(fashion_mnist=True, mnist=True, testing=False):
 
-    # get both mnist and fashion mnist
+    # get only fashion mnit 
     if fashion_mnist:
     
         # load fashion mnist from file 
@@ -48,7 +50,8 @@ def fetch_data(fashion_mnist=True, mnist=True, testing=False):
         X_test = m_test_X
         Y_test = m_test_Y
     
-    # get only fashion mnit 
+   
+    # get both mnist and fashion mnist
     if mnist and fashion_mnist: 
         
         # concatenate fashion mnist and mnist together
@@ -56,6 +59,10 @@ def fetch_data(fashion_mnist=True, mnist=True, testing=False):
         Y_train = np.concatenate((m_train_Y, f_train_Y), axis=0)
         X_test = np.concatenate((m_test_X, f_test_X), axis=0)
         Y_test = np.concatenate((m_test_Y, f_test_Y), axis=0)
+
+    # convert to categorical one hot vectors
+    Y_train = to_categorical(Y_train)
+    Y_test = to_categorical(Y_test)
     
     return X_train, Y_train, X_test, Y_test
 
@@ -82,6 +89,15 @@ def load_file(filepath, testing):
 
     return X, Y
 
+# callback function to anneal the learning rate
+def lr_scheduler(epoch):
+    
+    # change the learning rate at the 26th epoch
+    if epoch == 26:
+        K.set_value(model.optimizer.lr, 1e-5)
+    
+    return K.get_value(model.optimizer.lr)
+
 def create_CNN_model():
     
     # initialize a sequential model
@@ -98,23 +114,39 @@ def create_CNN_model():
     
     model.add(Conv2D(192, (3, 3), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1] , strides = 1, activation ='relu'))
     model.add(Conv2D(192, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 1, activation = 'relu'))
-    model.add(Conv2D(20, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 2, activation = 'relu'))
+    model.add(Conv2D(10, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 2, activation = 'relu'))
     
     # add the final output softmax layer
-    model.add(Dense(20, activation ='softmax'))
+    model.add(Dense(10, activation ='softmax'))
     
-    # set the model hyperparameters 
-    model.compile(Adam(), loss = 'categorical_crossentropy', metrics=['accuracy'])
+    # set the model parameters
+    model.compile(Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
     
     return model
 
 def main():
     
-    # fetch the data
-    X_train, Y_train, X_test, Y_test = fetch_data()
+    # fetch the data - MNIST only 
+    X_train, Y_train, X_test, Y_test = fetch_data(fashion_mnist = False)
+
+    # # fetch the data - fashion MNIST only 
+    # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the model 
     model = create_CNN_model()
+
+    # callback for annealing the learning rate after 25 epochs
+    callback = LearningRateScheduler(lr_scheduler)
+
+    # run training
+    model.fit(X_train, Y_train, 
+            validation_data = (X_test, Y_test),
+            epochs = EPOCHS, 
+            batch_size = BATCH_SIZE, 
+            callbacks=[callback],
+            verbose = 2)
+
+
 
 
 
