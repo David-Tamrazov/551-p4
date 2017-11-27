@@ -89,6 +89,8 @@ def load_file(filepath, testing):
 
     return X, Y
 
+
+
 # callback function to anneal the learning rate
 def lr_scheduler(epoch):
     
@@ -97,6 +99,7 @@ def lr_scheduler(epoch):
         K.set_value(model.optimizer.lr, 1e-5)
     
     return K.get_value(model.optimizer.lr)
+
 
 def create_CNN_model():
     
@@ -116,6 +119,9 @@ def create_CNN_model():
     model.add(Conv2D(192, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 1, activation = 'relu'))
     model.add(Conv2D(10, (1, 1), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 2, activation = 'relu'))
     
+    # Flatten
+    model.add(Flatten())
+    
     # add the final output softmax layer
     model.add(Dense(10, activation ='softmax'))
     
@@ -123,6 +129,7 @@ def create_CNN_model():
     model.compile(Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
     
     return model
+
 
 def main():
     
