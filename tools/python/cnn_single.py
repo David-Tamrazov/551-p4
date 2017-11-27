@@ -1,9 +1,8 @@
 import keras
-import keras.backend as K
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Conv2D, MaxPooling2D, Flatten, Dropout, BatchNormalization
+from keras.layers import Dense, Activation, Conv2D, Flatten
 from keras.optimizers import Adam as Adam
 from keras.callbacks import LearningRateScheduler
 from keras.utils import to_categorical
