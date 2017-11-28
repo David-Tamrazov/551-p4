@@ -84,7 +84,7 @@ def load_file(filepath, testing):
     if testing:
         tmp = pd.read_csv(filepath, sep=' ', skiprows=1).values; 
     else:
-        tmp = pd.read_csv(filepath, sep=' ', nrows=10, skiprows=1).values; 
+        tmp = pd.read_csv(filepath, sep=' ', nrows=100, skiprows=1).values; 
     
     # split the data between pixel and meta 
     meta_data = tmp[:, 0:2]
@@ -161,10 +161,10 @@ def load_pretrained_model_and_modify():
 
     # remove the softmax layer on top (20 outputs)
     loaded_model.pop()
-    # fix all the conv layers (and only train the fully connected layer on top)
+    # fix all the convolutional layers, only train the fully connected layer on top
     # TODO should we consider fix-train-unfix-train?
     for layer in loaded_model.layers:
-            layer.trainable = False
+        layer.trainable = False
     # add a 10 output softmax layer in place of the removed layer
     loaded_model.add(Dense(10, activation ='softmax'))
     compile_model(loaded_model)
@@ -207,12 +207,10 @@ def main():
             callbacks=[callback],
             verbose = 2)
 
-    # similar for fasion model:
+    # similarly for fasion model:
     fa_model = load_pretrained_model_and_modify()
     # TODO train..
 
 
 main()
-
-
 

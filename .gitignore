@@ -83,3 +83,7 @@ tags
 # End of https://www.gitignore.io/api/vim,clion
 
 .idea/
+
+#model
+*.json
+*.h5
