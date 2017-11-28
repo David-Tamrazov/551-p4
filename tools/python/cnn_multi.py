@@ -21,6 +21,7 @@ mnist_test_path = '../../data/mnist_ocv/mnist_test.ocv'
 # filepath for the pre-trained multitask model
 serialized_multitask_model_path = "./multitask_model.json"
 serialized_multitask_weights_path = "./multitask_weights.h5"
+
 # hyper parameters 
 IMAGE_SIZE = 28
 EPOCHS = 5 #todo 50
@@ -112,6 +113,7 @@ def lr_scheduler(epoch):
 # TODO may need to modify according to the paper
 def compile_model(model):
     model.compile(Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
+    return model
     
 def create_CNN_model():
     
@@ -151,7 +153,9 @@ def save_pretrained_model(multitask_model):
     # save the pre-trained weights
     multitask_model.save_weights(serialized_multitask_weights_path)
 
-def load_pretrained_model_and_modify():
+
+def load_pretrained_model():
+    
     json_file = open(serialized_multitask_model_path, "r")
     loaded_model_json = json_file.read()
     json_file.close()
@@ -159,17 +163,24 @@ def load_pretrained_model_and_modify():
 
     loaded_model.load_weights(serialized_multitask_weights_path)
 
-    # remove the softmax layer on top (20 outputs)
-    loaded_model.pop()
-    # fix all the convolutional layers, only train the fully connected layer on top
-    # TODO should we consider fix-train-unfix-train?
-    for layer in loaded_model.layers:
-        layer.trainable = False
-    # add a 10 output softmax layer in place of the removed layer
-    loaded_model.add(Dense(10, activation ='softmax'))
-    compile_model(loaded_model)
-
     return loaded_model
+
+
+def convert_to_single_task(model):
+    
+    # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
+    model.pop()
+    model.pop()
+    model.pop()
+
+    # add 10-class versions of the same layers 
+    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
+    model.add(Flatten())
+    model.add(Dense(10, activation ='softmax'))
+
+    # compile and return the model 
+    return compile_model(model)
+
 
 def main():
     all_testing_data = False
@@ -195,11 +206,16 @@ def main():
 
     # save the model to disc, path is specified in serialized_multitask*
     save_pretrained_model(multitask_model)
+    
     # load model for mnist
-    mn_model = load_pretrained_model_and_modify()
+    mn_model = load_pretrained_model()
 
-    # train the single task model ( ONLY the top layer can be trained )
+    # convert the model to single-task learner 
+    mn_model = convert_to_single_task(mn_model)
+
+    # train the single task learner on MNIST 
     X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, testing = all_testing_data)
+    
     mn_model.fit(X_train, Y_train, 
             validation_data = (X_test, Y_test),
             epochs = EPOCHS, 
@@ -208,8 +224,21 @@ def main():
             verbose = 2)
 
     # similarly for fasion model:
-    fa_model = load_pretrained_model_and_modify()
-    # TODO train..
+    fa_model = load_pretrained_model()
+    fa_model = convert_to_single_task(fa_model)
+
+    
+    # train the other single task learner on fashion MNIST 
+    X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, testing = all_testing_data)
+
+    
+    # run training 
+    fa_model.fit(X_train, Y_train, 
+            validation_data = (X_test, Y_test),
+            epochs = EPOCHS, 
+            batch_size = BATCH_SIZE, 
+            callbacks=[callback],
+            verbose = 2)
 
 
 main()
