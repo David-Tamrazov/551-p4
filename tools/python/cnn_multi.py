@@ -10,6 +10,9 @@ from keras.optimizers import Adam as Adam
 from keras.callbacks import LearningRateScheduler
 from keras.utils import to_categorical
 
+all_testing_data = False
+freeze_bottom = False
+
 # filepaths to the fashion mnist data
 fmnist_train_path = '../../data/fashion_ocv/fashion_train.ocv'
 fmnist_test_path = '../../data/fashion_ocv/fashion_train.ocv'
@@ -84,7 +87,7 @@ def load_file(filepath, testing):
     if testing:
         tmp = pd.read_csv(filepath, sep=' ', skiprows=1).values; 
     else:
-        tmp = pd.read_csv(filepath, sep=' ', nrows=100, skiprows=1).values; 
+        tmp = pd.read_csv(filepath, sep=' ', nrows=10, skiprows=1).values; 
     
     # split the data between pixel and meta 
     meta_data = tmp[:, 0:2]
@@ -161,19 +164,26 @@ def load_pretrained_model_and_modify():
 
     # remove the softmax layer on top (20 outputs)
     loaded_model.pop()
+    loaded_model.pop()
+    loaded_model.pop()
+
+    # add the final output softmax layer
     # fix all the convolutional layers, only train the fully connected layer on top
     # TODO should we consider fix-train-unfix-train?
-    for layer in loaded_model.layers:
-        layer.trainable = False
+    if freeze_bottom:
+        for layer in loaded_model.layers:
+            layer.trainable = False
+
     # add a 10 output softmax layer in place of the removed layer
+    loaded_model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
+    loaded_model.add(Flatten())
     loaded_model.add(Dense(10, activation ='softmax'))
+
     compile_model(loaded_model)
 
     return loaded_model
 
 def main():
-    all_testing_data = False
-
     # fetch the data - MNIST only 
     X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, fashion_mnist = True, testing = all_testing_data)
 
