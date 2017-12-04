@@ -4,7 +4,6 @@ import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Conv2D, Flatten
 from keras.optimizers import Adam as Adam
-from keras.callbacks import LearningRateScheduler
 from keras.utils import to_categorical
 
 # filepaths to the fashion mnist data
@@ -18,8 +17,9 @@ mnist_test_path = '../../data/mnist_ocv/mnist_test.ocv'
 
 # hyper parameters 
 IMAGE_SIZE = 28
-EPOCHS = 50
+EPOCHS = 25
 LEARNING_RATE = 1e-3
+DECAY_RATE = LEARNING_RATE / EPOCHS
 BATCH_SIZE = 100
 
 
@@ -40,7 +40,7 @@ def fetch_data(fashion_mnist=True, mnist=True, testing=False):
 
     # get mnist data
     if mnist:
-    
+
         # load mnist from file 
         m_train_X, m_train_Y = load_file(mnist_train_path, testing)
         m_test_X, m_test_Y = load_file(mnist_test_path, testing)
@@ -53,6 +53,10 @@ def fetch_data(fashion_mnist=True, mnist=True, testing=False):
    
     # get both mnist and fashion mnist
     if mnist and fashion_mnist: 
+
+        # add 10 to the fashion mnist labels to account for the 10 extra classes
+        f_train_Y += 10
+        f_test_Y += 10 
         
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((m_train_X, f_train_X), axis=0)
@@ -126,7 +130,7 @@ def create_CNN_model():
     model.add(Dense(10, activation ='softmax'))
     
     # set the model parameters
-    model.compile(Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
+    model.compile(Adam(lr = LEARNING_RATE, decay = DECAY_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
     
     return model
 
@@ -142,15 +146,11 @@ def main():
     # build the model 
     model = create_CNN_model()
 
-    # callback for annealing the learning rate after 25 epochs
-    callback = LearningRateScheduler(lr_scheduler)
-
     # run training
     model.fit(X_train, Y_train, 
             validation_data = (X_test, Y_test),
             epochs = EPOCHS, 
             batch_size = BATCH_SIZE, 
-            callbacks=[callback],
             verbose = 2)
 
 

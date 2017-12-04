@@ -7,8 +7,10 @@ from keras.models import Sequential
 from keras.models import model_from_json
 from keras.layers import Dense, Activation, Conv2D, Flatten
 from keras.optimizers import Adam as Adam
-from keras.callbacks import LearningRateScheduler
 from keras.utils import to_categorical
+
+all_testing_data = False
+freeze_bottom = False
 
 # filepaths to the fashion mnist data
 fmnist_train_path = '../../data/fashion_ocv/fashion_train.ocv'
@@ -24,8 +26,9 @@ serialized_multitask_weights_path = "./multitask_weights.h5"
 
 # hyper parameters 
 IMAGE_SIZE = 28
-EPOCHS = 5 #todo 50
+EPOCHS = 25 #todo 50
 LEARNING_RATE = 1e-3
+DECAY_RATE = LEARNING_RATE / EPOCHS
 BATCH_SIZE = 100
 
 
@@ -64,6 +67,11 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
 
         num_classes = 20
         
+        # increment the fashion_mnist labels by 10 to account for the 10 extra classes 
+        f_train_Y += 10
+        f_test_Y += 10
+
+
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((m_train_X, f_train_X), axis=0)
         Y_train = np.concatenate((m_train_Y, f_train_Y), axis=0)
@@ -85,7 +93,7 @@ def load_file(filepath, testing):
     if testing:
         tmp = pd.read_csv(filepath, sep=' ', skiprows=1).values; 
     else:
-        tmp = pd.read_csv(filepath, sep=' ', nrows=100, skiprows=1).values; 
+        tmp = pd.read_csv(filepath, sep=' ', nrows=10, skiprows=1).values; 
     
     # split the data between pixel and meta 
     meta_data = tmp[:, 0:2]
@@ -112,7 +120,7 @@ def lr_scheduler(epoch):
 # outlined this function to compile all models with the same parameter
 # TODO may need to modify according to the paper
 def compile_model(model):
-    model.compile(Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
+    model.compile(Adam(lr = LEARNING_RATE, decay=DECAY_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
     return model
     
 def create_CNN_model():
@@ -163,6 +171,25 @@ def load_pretrained_model():
 
     loaded_model.load_weights(serialized_multitask_weights_path)
 
+    # remove the softmax layer on top (20 outputs)
+    loaded_model.pop()
+    loaded_model.pop()
+    loaded_model.pop()
+
+    # add the final output softmax layer
+    # fix all the convolutional layers, only train the fully connected layer on top
+    # TODO should we consider fix-train-unfix-train?
+    if freeze_bottom:
+        for layer in loaded_model.layers:
+            layer.trainable = False
+
+    # add a 10 output softmax layer in place of the removed layer
+    loaded_model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
+    loaded_model.add(Flatten())
+    loaded_model.add(Dense(10, activation ='softmax'))
+
+    compile_model(loaded_model)
+
     return loaded_model
 
 
@@ -183,8 +210,6 @@ def convert_to_single_task(model):
 
 
 def main():
-    all_testing_data = False
-
     # fetch the data - MNIST only 
     X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, fashion_mnist = True, testing = all_testing_data)
 
@@ -192,9 +217,6 @@ def main():
 
     # build the multitask_model 
     multitask_model = create_CNN_model()
-
-    # callback for annealing the learning rate after 25 epochs
-    callback = LearningRateScheduler(lr_scheduler)
     
     # run training
     multitask_model.fit(X_train, Y_train, 
@@ -219,8 +241,7 @@ def main():
     mn_model.fit(X_train, Y_train, 
             validation_data = (X_test, Y_test),
             epochs = EPOCHS, 
-            batch_size = BATCH_SIZE, 
-            callbacks=[callback],
+            batch_size = BATCH_SIZE,
             verbose = 2)
 
     # similarly for fasion model:
@@ -237,7 +258,6 @@ def main():
             validation_data = (X_test, Y_test),
             epochs = EPOCHS, 
             batch_size = BATCH_SIZE, 
-            callbacks=[callback],
             verbose = 2)
 
 
