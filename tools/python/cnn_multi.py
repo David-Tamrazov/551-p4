@@ -7,7 +7,6 @@ from keras.models import Sequential
 from keras.models import model_from_json
 from keras.layers import Dense, Activation, Conv2D, Flatten
 from keras.optimizers import Adam as Adam
-from keras.callbacks import LearningRateScheduler
 from keras.utils import to_categorical
 
 all_testing_data = False
@@ -24,10 +23,12 @@ mnist_test_path = '../../data/mnist_ocv/mnist_test.ocv'
 # filepath for the pre-trained multitask model
 serialized_multitask_model_path = "./multitask_model.json"
 serialized_multitask_weights_path = "./multitask_weights.h5"
+
 # hyper parameters 
 IMAGE_SIZE = 28
-EPOCHS = 5 #todo 50
+EPOCHS = 25 #todo 50
 LEARNING_RATE = 1e-3
+DECAY_RATE = LEARNING_RATE / EPOCHS
 BATCH_SIZE = 100
 
 
@@ -66,6 +67,11 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
 
         num_classes = 20
         
+        # increment the fashion_mnist labels by 10 to account for the 10 extra classes 
+        f_train_Y += 10
+        f_test_Y += 10
+
+
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((m_train_X, f_train_X), axis=0)
         Y_train = np.concatenate((m_train_Y, f_train_Y), axis=0)
@@ -114,7 +120,8 @@ def lr_scheduler(epoch):
 # outlined this function to compile all models with the same parameter
 # TODO may need to modify according to the paper
 def compile_model(model):
-    model.compile(Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
+    model.compile(Adam(lr = LEARNING_RATE, decay=DECAY_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
+    return model
     
 def create_CNN_model():
     
@@ -154,7 +161,9 @@ def save_pretrained_model(multitask_model):
     # save the pre-trained weights
     multitask_model.save_weights(serialized_multitask_weights_path)
 
-def load_pretrained_model_and_modify():
+
+def load_pretrained_model():
+    
     json_file = open(serialized_multitask_model_path, "r")
     loaded_model_json = json_file.read()
     json_file.close()
@@ -183,6 +192,23 @@ def load_pretrained_model_and_modify():
 
     return loaded_model
 
+
+def convert_to_single_task(model):
+    
+    # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
+    model.pop()
+    model.pop()
+    model.pop()
+
+    # add 10-class versions of the same layers 
+    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
+    model.add(Flatten())
+    model.add(Dense(10, activation ='softmax'))
+
+    # compile and return the model 
+    return compile_model(model)
+
+
 def main():
     # fetch the data - MNIST only 
     X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, fashion_mnist = True, testing = all_testing_data)
@@ -191,9 +217,6 @@ def main():
 
     # build the multitask_model 
     multitask_model = create_CNN_model()
-
-    # callback for annealing the learning rate after 25 epochs
-    callback = LearningRateScheduler(lr_scheduler)
     
     # run training
     multitask_model.fit(X_train, Y_train, 
@@ -205,21 +228,37 @@ def main():
 
     # save the model to disc, path is specified in serialized_multitask*
     save_pretrained_model(multitask_model)
+    
     # load model for mnist
-    mn_model = load_pretrained_model_and_modify()
+    mn_model = load_pretrained_model()
 
-    # train the single task model ( ONLY the top layer can be trained )
+    # convert the model to single-task learner 
+    mn_model = convert_to_single_task(mn_model)
+
+    # train the single task learner on MNIST 
     X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, testing = all_testing_data)
+    
     mn_model.fit(X_train, Y_train, 
             validation_data = (X_test, Y_test),
             epochs = EPOCHS, 
-            batch_size = BATCH_SIZE, 
-            callbacks=[callback],
+            batch_size = BATCH_SIZE,
             verbose = 2)
 
     # similarly for fasion model:
-    fa_model = load_pretrained_model_and_modify()
-    # TODO train..
+    fa_model = load_pretrained_model()
+    fa_model = convert_to_single_task(fa_model)
+
+    
+    # train the other single task learner on fashion MNIST 
+    X_train, Y_train, X_test, Y_test = fetch_data(mnist = True, testing = all_testing_data)
+
+    
+    # run training 
+    fa_model.fit(X_train, Y_train, 
+            validation_data = (X_test, Y_test),
+            epochs = EPOCHS, 
+            batch_size = BATCH_SIZE, 
+            verbose = 2)
 
 
 main()
