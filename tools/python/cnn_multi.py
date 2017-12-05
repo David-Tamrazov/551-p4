@@ -1,5 +1,4 @@
 # example run:   python cnn_multi.py --train fm --test=f --learning_rate=0.009 --epoch=2 --mini_testing_data
-cv
 
 
 #Put this code section before importing keras -- to save time when arguments were wrong
