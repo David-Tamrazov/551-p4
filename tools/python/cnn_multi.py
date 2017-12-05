@@ -1,4 +1,4 @@
-git reset --hard HEAD# example run:   python cnn_multi.py --train fm --test=f --learning_rate=0.009 --epoch=2 --mini_testing_data
+# example run:   python cnn_multi.py --train fm --test=f --learning_rate=0.009 --epoch=2 --mini_testing_data
 
 #Put this code section before importing keras -- to save time when arguments were wrong
 import os
@@ -49,7 +49,6 @@ BATCH_SIZE = 100
 
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
 def fetch_data(fashion_mnist=False, mnist=False, testing=False):
-
     num_classes = 10
     
     # get only fashion mnit 
@@ -58,9 +57,6 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
         # load fashion mnist from file 
         f_train_X, f_train_Y = load_file(fmnist_train_path, testing)
         f_test_X, f_test_Y = load_file(fmnist_test_path, testing)
-
-        f_train_Y = [x-10 for x in f_train_Y]
-        f_test_Y = [x-10 for x in f_test_Y]
 
         X_train = f_train_X
         Y_train = f_train_Y
@@ -84,17 +80,17 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
     if mnist and fashion_mnist: 
 
         num_classes = 20
-        
-        # increment the fashion_mnist labels by 10 to account for the 10 extra classes 
-        f_train_Y += 10
-        f_test_Y += 10
-        print f_train_Y
 
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((m_train_X, f_train_X), axis=0)
         Y_train = np.concatenate((m_train_Y, f_train_Y), axis=0)
         X_test = np.concatenate((m_test_X, f_test_X), axis=0)
         Y_test = np.concatenate((m_test_Y, f_test_Y), axis=0)
+
+    # rename labels if only fashion_mnist were used
+    if fashion_mnist and not mnist:
+        Y_train = [x-10 for x in f_train_Y]
+        Y_test = [x-10 for x in f_test_Y]
 
     # convert to categorical one hot vectors
     Y_train = to_categorical(Y_train,num_classes=num_classes)
@@ -124,18 +120,6 @@ def load_file(filepath, testing):
 
     return X, Y
 
-
-
-# callback function to anneal the learning rate
-def lr_scheduler(epoch):
-    # change the learning rate at the 26th epoch onwards
-    if epoch > 25:
-        return 1e-5
-    
-    return 1e-3
-
-# callback for annealing the learning rate after 25 epochs
-callback = LearningRateScheduler(lr_scheduler)
 
 # outlined this function to compile all models with the same parameter
 # TODO may need to modify according to the paper
