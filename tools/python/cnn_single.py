@@ -63,6 +63,9 @@ def fetch_data(is_fashion, testing):
         Y_train = f_train_Y
         X_test = f_test_X
         Y_test = f_test_Y
+
+        Y_train -= 10
+        Y_test -= 10
     # get mnist data
     else:
     
@@ -75,8 +78,6 @@ def fetch_data(is_fashion, testing):
         X_test = m_test_X
         Y_test = m_test_Y 
 
-        Y_train -= 10
-        Y_test -= 10
 
     # convert to categorical one hot vectors
     Y_train = to_categorical(Y_train,num_classes=num_classes)
