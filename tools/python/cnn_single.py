@@ -6,7 +6,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--is_fashion", action="store_true", dest="is_fashion")
 parser.add_argument("--epoch", action="store", dest="epoch", type=int, default=25)
-parser.add_argument("--load_model", action="store_true", dest="load")
+parser.add_argument("--load_multi", action="store_true", dest="load_multi")
 parser.add_argument("--mini_testing_data", action="store_false", dest="all_testing_data")
 parser.add_argument("--learning_rate", action="store", dest="learning_rate", type=float, default=0.001)
 args = parser.parse_args()
@@ -238,7 +238,7 @@ def main():
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the multitask_model 
-    model = load_model(args.load_multi)
+    model = load_model(args.load_multi, args.is_fashion)
 
     # run training
     model.fit(X_train, Y_train, 
