@@ -42,7 +42,7 @@ serialized_multitask_weights_path = "./multitask_weights.h5"
 # hyper parameters 
 IMAGE_SIZE = 28
 EPOCHS = args.epoch
-LEARNING_RATE = 1e-3
+LEARNING_RATE = args.learning_rate
 DECAY_RATE = LEARNING_RATE / EPOCHS
 BATCH_SIZE = 100
 
