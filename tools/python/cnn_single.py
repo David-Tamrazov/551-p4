@@ -169,9 +169,9 @@ def load_pretrained_model(model_file, weights_file):
 def convert_to_single_task(model):
     
     # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
-    model.layers.pop()
-    model.layers.pop()
-    model.layers.pop()
+    model.pop()
+    model.pop()
+    model.pop()
 
     # add the final output softmax layer
     # fix all the convolutional layers, only train the fully connected layer on top
@@ -181,9 +181,9 @@ def convert_to_single_task(model):
             layer.trainable = False
 
     # add 10-class versions of the same layers 
-    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
-    model.add(Flatten())
-    model.add(Dense(10, activation ='softmax'))
+    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu', name="NEW_TOP"))
+    model.add(Flatten(name="NEW_FLATTEN"))
+    model.add(Dense(10, activation ='softmax', name="NEW_SOFTMAX"))
 
     # compile and return the model 
     return compile_model(model)
@@ -233,7 +233,7 @@ def main():
                         callbacks=[],
                         verbose = 2)
 
-    save_pretrained_model(model)
+    save_pretrained_model(model,args.is_fashion)
 
 main()
 
