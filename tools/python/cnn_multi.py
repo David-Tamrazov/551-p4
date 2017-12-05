@@ -223,35 +223,30 @@ def main():
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the multitask_model 
-    multitask_model = create_CNN_model()
     
     if args.load:
         print "Attention: loading trained net from"
         print "\tmodel: " + serialized_multitask_model_path
         print "\tweights: " + serialized_multitask_weights_path
+        multitask_model = load_pretrained_model()
     else:
-        print "Attention: training new networks"
+        multitask_model = create_CNN_model()
+        print "Warning: training new networks"
         if os.path.exists(serialized_multitask_model_path) or os.path.exists(serialized_multitask_weights_path):
             while(True):
                 if raw_input("Overwriting existing file. Type [y] to continue...   ") == 'y':
                     break
 
-        # run training
-        multitask_model.fit(X_train, Y_train, 
-                            validation_data = (X_test, Y_test),
-                            epochs = args.epoch, 
-                            batch_size = BATCH_SIZE, 
-                            callbacks=[],
-                            verbose = 2)
+    # run training
+    multitask_model.fit(X_train, Y_train, 
+                        validation_data = (X_test, Y_test),
+                        epochs = args.epoch, 
+                        batch_size = BATCH_SIZE, 
+                        callbacks=[],
+                        verbose = 2)
 
-        # save the model to disc, path is specified in serialized_multitask*
-        save_pretrained_model(multitask_model)
-
-    #test on all data sets
-    for data_set_name in "".join(set(args.test)):
-        run_test_on(data_set_name)
-        # train the single task model on the testset specified on --test
-
+    # save the model to disc, path is specified in serialized_multitask*
+    save_pretrained_model(multitask_model)
 
 main()
 
