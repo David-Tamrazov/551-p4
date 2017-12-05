@@ -71,9 +71,12 @@ def fetch_data(is_fashion, testing):
         m_test_X, m_test_Y = load_file(mnist_test_path, testing)
         
         X_train = m_train_X
-        Y_train = m_train_Y - 10
+        Y_train = m_train_Y 
         X_test = m_test_X
-        Y_test = m_test_Y - 10
+        Y_test = m_test_Y 
+
+        Y_train -= 10
+        Y_test -= 10
 
     # convert to categorical one hot vectors
     Y_train = to_categorical(Y_train,num_classes=num_classes)
