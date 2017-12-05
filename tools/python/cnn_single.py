@@ -169,9 +169,9 @@ def load_pretrained_model(model_file, weights_file):
 def convert_to_single_task(model):
     
     # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
-    model.pop()
-    model.pop()
-    model.pop()
+    model.layers.pop()
+    model.layers.pop()
+    model.layers.pop()
 
     # add the final output softmax layer
     # fix all the convolutional layers, only train the fully connected layer on top
