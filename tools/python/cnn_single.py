@@ -158,8 +158,8 @@ def create_CNN_model():
     return model
 
 def save_pretrained_model(model, is_fashion):
-    model_save_path = is_fashion ? serialized_fashion_single_model_path : serialized_mnist_single_model_path
-    weights_save_path = is_fashion ? serialized_fashion_single_weights_path : serialized_mnist_single_weights_path
+    model_save_path = serialized_fashion_single_model_path if is_fashion else serialized_mnist_single_model_path
+    weights_save_path = serialized_fashion_single_weights_path if is_fashion else serialized_mnist_single_weights_path
     
     # save the model
     json_file = open(model_save_path, "w")
