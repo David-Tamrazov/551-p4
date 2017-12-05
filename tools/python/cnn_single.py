@@ -49,7 +49,7 @@ BATCH_SIZE = 100
 
 
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
-def fetch_data(is_fashion):
+def fetch_data(is_fashion, testing):
     num_classes = 10
     
     # get only fashion mnit 
@@ -213,7 +213,7 @@ def load_model(load_multi, is_fashion):
 
 def main():
     # fetch the data - MNIST only 
-    X_train, Y_train, X_test, Y_test = fetch_data(args.is_fashion)
+    X_train, Y_train, X_test, Y_test = fetch_data(args.is_fashion, args.all_testing_data)
 
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
