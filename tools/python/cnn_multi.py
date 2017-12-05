@@ -174,6 +174,7 @@ def load_pretrained_model():
     loaded_model = model_from_json(loaded_model_json)
 
     loaded_model.load_weights(serialized_multitask_weights_path)
+    compile_model(loaded_model)
 
     return loaded_model
 
