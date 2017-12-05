@@ -1,4 +1,6 @@
 # example run:   python cnn_multi.py --train fm --test=f --learning_rate=0.009 --epoch=2 --mini_testing_data
+cv
+
 
 #Put this code section before importing keras -- to save time when arguments were wrong
 import os
@@ -28,12 +30,12 @@ from keras.utils import to_categorical
 freeze_bottom = False
 
 # filepaths to the fashion mnist data
-fmnist_train_path = '../../data/fashion_ocv/fashion_train.ocv'
-fmnist_test_path = '../../data/fashion_ocv/fashion_train.ocv'
+fmnist_train_path = '../../data/fashion_train.ocv'
+fmnist_test_path = '../../data/fashion_train.ocv'
 
 # filepaths to the mnist data
-mnist_train_path = '../../data/mnist_ocv/mnist_train.ocv'
-mnist_test_path = '../../data/mnist_ocv/mnist_test.ocv'
+mnist_train_path = '../../data/mnist_train.ocv'
+mnist_test_path = '../../data/mnist_test.ocv'
 
 # filepath for the pre-trained multitask model
 serialized_multitask_model_path = "./multitask_model.json"
