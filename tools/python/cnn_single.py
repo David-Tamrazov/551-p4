@@ -49,11 +49,11 @@ BATCH_SIZE = 100
 
 
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
-def fetch_data(fashion_mnist=False, mnist=False, testing=False):
+def fetch_data(is_fashion):
     num_classes = 10
     
     # get only fashion mnit 
-    if fashion_mnist:
+    if is_fashion:
     
         # load fashion mnist from file 
         f_train_X, f_train_Y = load_file(fmnist_train_path, testing)
@@ -63,9 +63,8 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
         Y_train = f_train_Y
         X_test = f_test_X
         Y_test = f_test_Y
-
     # get mnist data
-    if mnist:
+    else:
     
         # load mnist from file 
         m_train_X, m_train_Y = load_file(mnist_train_path, testing)
@@ -75,31 +74,12 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
         Y_train = m_train_Y
         X_test = m_test_X
         Y_test = m_test_Y
-    
-   
-    # get both mnist and fashion mnist
-    if mnist and fashion_mnist: 
-
-        num_classes = 20
-
-        # concatenate fashion mnist and mnist together
-        X_train = np.concatenate((m_train_X, f_train_X), axis=0)
-        Y_train = np.concatenate((m_train_Y, f_train_Y), axis=0)
-        X_test = np.concatenate((m_test_X, f_test_X), axis=0)
-        Y_test = np.concatenate((m_test_Y, f_test_Y), axis=0)
-
-    # rename labels if only fashion_mnist were used
-    if fashion_mnist and not mnist:
-        Y_train = [x-10 for x in f_train_Y]
-        Y_test = [x-10 for x in f_test_Y]
 
     # convert to categorical one hot vectors
     Y_train = to_categorical(Y_train,num_classes=num_classes)
     Y_test = to_categorical(Y_test,num_classes=num_classes)
     
     return X_train, Y_train, X_test, Y_test
-
-
 
 # Loads and returns the image data found at the filepath 
 def load_file(filepath, testing):
@@ -233,7 +213,7 @@ def load_model(load_multi, is_fashion):
 
 def main():
     # fetch the data - MNIST only 
-    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" in args.train), fashion_mnist = ("f" in args.train), testing = args.all_testing_data)
+    X_train, Y_train, X_test, Y_test = fetch_data(args.is_fashion)
 
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
