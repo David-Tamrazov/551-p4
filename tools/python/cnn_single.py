@@ -216,7 +216,7 @@ def load_model(load_multi, is_fashion, fresh):
     elif is_fashion:
         model = load_pretrained_model(serialized_fashion_single_model_path, serialized_fashion_single_weights_path)
     else:
-        model = load_pretrained_model(serialized_mnist_single_weights_path, serialized_mnist_single_weights_path)
+        model = load_pretrained_model(serialized_mnist_single_model_path, serialized_mnist_single_weights_path)
     return model
 
 def main():
