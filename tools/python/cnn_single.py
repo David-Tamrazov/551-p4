@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--is_fashion", action="store_true", dest="is_fashion")
 parser.add_argument("--epoch", action="store", dest="epoch", type=int, default=25)
 parser.add_argument("--load_multi", action="store_true", dest="load_multi")
+parser.add_argument("--fresh", action="store_true", dest="fresh")
 parser.add_argument("--mini_testing_data", action="store_false", dest="all_testing_data")
 parser.add_argument("--learning_rate", action="store", dest="learning_rate", type=float, default=0.001)
 args = parser.parse_args()
@@ -128,13 +129,13 @@ def create_CNN_model():
     
     model.add(Conv2D(192, (3, 3) , strides = 1, activation ='relu'))
     model.add(Conv2D(192, (1, 1), strides = 1, activation = 'relu'))
-    model.add(Conv2D(20, (1, 1), strides = 2, activation = 'relu'))
+    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
     
     # Flatten
     model.add(Flatten())
     
     # add the final output softmax layer
-    model.add(Dense(20, activation ='softmax'))
+    model.add(Dense(10, activation ='softmax'))
     
     # set the model parameters
     compile_model(model)
@@ -206,10 +207,12 @@ def run_test_on(name):
 
 
 # Load model
-def load_model(load_multi, is_fashion):
+def load_model(load_multi, is_fashion, fresh):
     if load_multi:
         model = load_pretrained_model(serialized_multitask_model_path, serialized_multitask_weights_path)
         model = convert_to_single_task(model)
+    elif fresh:
+        model = create_CNN_model()
     elif is_fashion:
         model = load_pretrained_model(serialized_fashion_single_model_path, serialized_fashion_single_weights_path)
     else:
@@ -223,7 +226,7 @@ def main():
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the multitask_model 
-    model = load_model(args.load_multi, args.is_fashion)
+    model = load_model(args.load_multi, args.is_fashion, args.fresh)
 
     # run training
     model.fit(X_train, Y_train, 
