@@ -27,7 +27,7 @@ freeze_bottom = False
 
 # filepaths to the fashion mnist data
 fmnist_train_path = '../../../data/fashion_train.ocv'
-fmnist_test_path = '../../../data/fashion_train.ocv'
+fmnist_test_path = '../../../data/fashion_test.ocv'
 
 # filepaths to the mnist data
 mnist_train_path = '../../../data/mnist_train.ocv'
