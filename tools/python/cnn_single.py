@@ -207,11 +207,8 @@ def run_test_on(name):
 
 
 # Load model
-def load_model(load_multi, is_fashion, fresh):
-    if load_multi:
-        model = load_pretrained_model(serialized_multitask_model_path, serialized_multitask_weights_path)
-        model = convert_to_single_task(model)
-    elif fresh:
+def load_model(is_fashion, fresh):
+    if fresh:
         model = create_CNN_model()
     elif is_fashion:
         model = load_pretrained_model(serialized_fashion_single_model_path, serialized_fashion_single_weights_path)
@@ -226,7 +223,7 @@ def main():
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the multitask_model 
-    model = load_model(args.load_multi, args.is_fashion, args.fresh)
+    model = load_model(args.is_fashion, args.fresh)
 
     # run training
     model.fit(X_train, Y_train, 
