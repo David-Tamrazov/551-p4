@@ -54,6 +54,7 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
     
     # get only fashion mnit 
     if fashion_mnist:
+        print ">>    Fetching fashionMNIST dataset"
     
         # load fashion mnist from file 
         f_train_X, f_train_Y = load_file(fmnist_train_path, testing)
@@ -66,6 +67,7 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
 
     # get mnist data
     if mnist:
+        print ">>    Fetching MNIST dataset"
     
         # load mnist from file 
         m_train_X, m_train_Y = load_file(mnist_train_path, testing)
@@ -79,6 +81,7 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
    
     # get both mnist and fashion mnist
     if mnist and fashion_mnist: 
+        print ">>    Concatenating MNIST and fashionMNIST"
 
         num_classes = 20
 
@@ -90,6 +93,7 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
 
     # rename labels if only fashion_mnist were used
     if fashion_mnist and not mnist:
+        print ">>    Adjusting fashionMNIST labels"
         Y_train = [x-10 for x in f_train_Y]
         Y_test = [x-10 for x in f_test_Y]
 
@@ -159,96 +163,107 @@ def create_CNN_model():
 
 def save_pretrained_model(multitask_model):
     # save the model
+    print ">>   JSON path: {}".format(serialized_multitask_model_path)
     json_file = open(serialized_multitask_model_path, "w")
     model_json = multitask_model.to_json()
     json_file.write(model_json)
     json_file.close()
+
     # save the pre-trained weights
+    print ">>    Weights path: {}".format(serialized_multitask_weights_path)
     multitask_model.save_weights(serialized_multitask_weights_path)
 
 
 def load_pretrained_model():
     
+    print ">>    Loading JSON model: {}".format(serialized_multitask_model_path)
     json_file = open(serialized_multitask_model_path, "r")
     loaded_model_json = json_file.read()
     json_file.close()
     loaded_model = model_from_json(loaded_model_json)
 
+    print ">>    Loading weights: {}".format(serialized_multitask_weights_path)
     loaded_model.load_weights(serialized_multitask_weights_path)
     compile_model(loaded_model)
 
     return loaded_model
 
-def convert_to_single_task(model):
-    
-    # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
-    model.pop()
-    model.pop()
-    model.pop()
-
-    # add the final output softmax layer
-    # fix all the convolutional layers, only train the fully connected layer on top
-    # TODO should we consider fix-train-unfix-train?
-    if freeze_bottom:
-        for layer in loaded_model.layers:
-            layer.trainable = False
-
-    # add 10-class versions of the same layers 
-    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
-    model.add(Flatten())
-    model.add(Dense(10, activation ='softmax'))
-
-    # compile and return the model 
-    return compile_model(model)
-
-def run_test_on(name):
-    # load model for mnist
-    # load model for mnist
-    mn_model = load_pretrained_model()
-
-    # convert the model to single-task learner 
-    mn_model = convert_to_single_task(mn_model)
-
-    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" == name), fashion_mnist = ("f" == name), testing = args.all_testing_data)
-    mn_model.fit(X_train, Y_train, 
-            validation_data = (X_test, Y_test),
-            epochs = args.epoch, 
-            batch_size = BATCH_SIZE, 
-            callbacks=[],
-            verbose = 2)
-
-
 def main():
     # fetch the data - MNIST only 
+    print ">> Fetching data ..."
     X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" in args.train), fashion_mnist = ("f" in args.train), testing = args.all_testing_data)
+    print ">> Data fetched successfully"
 
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the multitask_model 
     
     if args.load:
-        print "Attention: loading trained net from"
-        print "\tmodel: " + serialized_multitask_model_path
-        print "\tweights: " + serialized_multitask_weights_path
+        print ">> Loading trained net from"
+        print ">>    model: " + serialized_multitask_model_path
+        print ">>    weights: " + serialized_multitask_weights_path
         multitask_model = load_pretrained_model()
     else:
+        print ">> Creating a new CNN model"
         multitask_model = create_CNN_model()
-        print "Warning: training new networks"
+        print ">> Checking if model files already exist on disk"
         if os.path.exists(serialized_multitask_model_path) or os.path.exists(serialized_multitask_weights_path):
             while(True):
                 if raw_input("Overwriting existing file. Type [y] to continue...   ") == 'y':
                     break
 
     # run training
+    print ">> Start training"
     multitask_model.fit(X_train, Y_train, 
                         validation_data = (X_test, Y_test),
                         epochs = args.epoch, 
                         batch_size = BATCH_SIZE, 
                         callbacks=[],
                         verbose = 2)
+    print ">> Training completed!"
 
     # save the model to disc, path is specified in serialized_multitask*
+    print ">> Saving model to disk"
     save_pretrained_model(multitask_model)
+    print ">> Model saved to disk"
+    print ">> Done"
 
 main()
 
+#def convert_to_single_task(model):
+#    
+#    # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
+#    model.pop()
+#    model.pop()
+#    model.pop()
+#
+#    # add the final output softmax layer
+#    # fix all the convolutional layers, only train the fully connected layer on top
+#    # TODO should we consider fix-train-unfix-train?
+#    if freeze_bottom:
+#        for layer in loaded_model.layers:
+#            layer.trainable = False
+#
+#    # add 10-class versions of the same layers 
+#    model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu'))
+#    model.add(Flatten())
+#    model.add(Dense(10, activation ='softmax'))
+#
+#    # compile and return the model 
+#    return compile_model(model)
+#
+#def run_test_on(name):
+#    # load model for mnist
+#    # load model for mnist
+#    mn_model = load_pretrained_model()
+#
+#    # convert the model to single-task learner 
+#    mn_model = convert_to_single_task(mn_model)
+#
+#    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" == name), fashion_mnist = ("f" == name), testing = args.all_testing_data)
+#    mn_model.fit(X_train, Y_train, 
+#            validation_data = (X_test, Y_test),
+#            epochs = args.epoch, 
+#            batch_size = BATCH_SIZE, 
+#            callbacks=[],
+#            verbose = 2)
