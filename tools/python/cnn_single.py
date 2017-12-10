@@ -55,6 +55,7 @@ def fetch_data(is_fashion, testing):
     
     # get only fashion mnit 
     if is_fashion:
+        print ">>    Fetching fashionMNIST dataset" 
     
         # load fashion mnist from file 
         f_train_X, f_train_Y = load_file(fmnist_train_path, testing)
@@ -65,10 +66,13 @@ def fetch_data(is_fashion, testing):
         X_test = f_test_X
         Y_test = f_test_Y
 
+        print ">>    Adjusting fashionMNIST labels"
         Y_train -= 10
         Y_test -= 10
+
     # get mnist data
     else:
+        print ">>    Fetching MNIST dataset"
     
         # load mnist from file 
         m_train_X, m_train_Y = load_file(mnist_train_path, testing)
@@ -78,7 +82,6 @@ def fetch_data(is_fashion, testing):
         Y_train = m_train_Y 
         X_test = m_test_X
         Y_test = m_test_Y 
-
 
     # convert to categorical one hot vectors
     Y_train = to_categorical(Y_train,num_classes=num_classes)
@@ -147,21 +150,26 @@ def save_pretrained_model(model, is_fashion):
     weights_save_path = serialized_fashion_single_weights_path if is_fashion else serialized_mnist_single_weights_path
     
     # save the model
+    print ">>   JSON path: {}".format(model_save_path)
     json_file = open(model_save_path, "w")
     model_json = model.to_json()
     json_file.write(model_json)
     json_file.close()
+    
     # save the pre-trained weights
+    print ">>    Weights path: {}".format(weights_save_path)
     model.save_weights(weights_save_path)
 
 
 def load_pretrained_model(model_file, weights_file):
     
+    print ">>    Loading JSON model: {}".format(model_file)
     json_file = open(model_file, "r")
     loaded_model_json = json_file.read()
     json_file.close()
     loaded_model = model_from_json(loaded_model_json)
 
+    print ">>    Loading weights: {}".format(weights_file)
     loaded_model.load_weights(weights_file)
     compile_model(loaded_model)
 
@@ -169,6 +177,7 @@ def load_pretrained_model(model_file, weights_file):
 
 def convert_to_single_task(model):
     
+    print ">>    Popping top 3 layers"
     # remove the top 3 layers - 20-class softmax, flatten, 20-filter conv 
     model.pop()
     model.pop()
@@ -182,6 +191,7 @@ def convert_to_single_task(model):
             layer.trainable = False
 
     # add 10-class versions of the same layers 
+    print ">>    Adding 10-class versions of the same layers"
     model.add(Conv2D(10, (1, 1), strides = 2, activation = 'relu', name="NEW_TOP"))
     model.add(Flatten(name="NEW_FLATTEN"))
     model.add(Dense(10, activation ='softmax', name="NEW_SOFTMAX"))
@@ -189,38 +199,26 @@ def convert_to_single_task(model):
     # compile and return the model 
     return compile_model(model)
 
-def run_test_on(name):
-    # load model for mnist
-    # load model for mnist
-    mn_model = load_pretrained_model()
-
-    # convert the model to single-task learner 
-    mn_model = convert_to_single_task(mn_model)
-
-    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" == name), fashion_mnist = ("f" == name), testing = args.all_testing_data)
-    mn_model.fit(X_train, Y_train, 
-            validation_data = (X_test, Y_test),
-            epochs = args.epoch, 
-            batch_size = BATCH_SIZE, 
-            callbacks=[],
-            verbose = 2)
-
-
 # Load model
 def load_model(load_multi, is_fashion, fresh):
     if load_multi:
+        print ">> Loading multi-task model"
         model = load_pretrained_model(serialized_multitask_model_path, serialized_multitask_weights_path)
         model = convert_to_single_task(model)
     elif fresh:
+        print ">> Creating a new single-task model"
         model = create_CNN_model()
     elif is_fashion:
+        print ">> Loading fashionMNIST single-task model"
         model = load_pretrained_model(serialized_fashion_single_model_path, serialized_fashion_single_weights_path)
     else:
+        print ">> Loading MNIST single-task model"
         model = load_pretrained_model(serialized_mnist_single_model_path, serialized_mnist_single_weights_path)
     return model
 
 def main():
     # fetch the data - MNIST only 
+    print ">> Fetching data ..."
     X_train, Y_train, X_test, Y_test = fetch_data(args.is_fashion, args.all_testing_data)
 
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
@@ -229,14 +227,34 @@ def main():
     model = load_model(args.load_multi, args.is_fashion, args.fresh)
 
     # run training
+    print ">> Start training"
     model.fit(X_train, Y_train, 
                         validation_data = (X_test, Y_test),
                         epochs = args.epoch, 
                         batch_size = BATCH_SIZE, 
                         callbacks=[],
                         verbose = 2)
+    print ">> Training completed!"
 
+    print ">> Saving model to disk"
     save_pretrained_model(model,args.is_fashion)
+    print ">> Model saved to disk"
+    print "Done"
 
 main()
 
+#def run_test_on(name):
+#    # load model for mnist
+#    # load model for mnist
+#    mn_model = load_pretrained_model()
+#
+#    # convert the model to single-task learner 
+#    mn_model = convert_to_single_task(mn_model)
+#
+#    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" == name), fashion_mnist = ("f" == name), testing = args.all_testing_data)
+#    mn_model.fit(X_train, Y_train, 
+#            validation_data = (X_test, Y_test),
+#            epochs = args.epoch, 
+#            batch_size = BATCH_SIZE, 
+#            callbacks=[],
+#            verbose = 2)

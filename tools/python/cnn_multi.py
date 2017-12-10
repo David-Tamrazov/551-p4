@@ -5,10 +5,8 @@
 import os
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--train", help="Takes a string of initials, e.g. fm means train both fasion mnist and mnist",action="store",dest="train",type=str.lower
-)
-parser.add_argument("--test", help="Takes a string of initials, e.g. fm means train both fasion mnist and mnist",action="store",dest="test",type=str.lower
-)
+parser.add_argument("--train", help="Takes a string of initials, e.g. fm means train both fasion mnist and mnist",action="store",dest="train",type=str.lower)
+parser.add_argument("--test", help="Takes a string of initials, e.g. fm means train both fasion mnist and mnist",action="store",dest="test",type=str.lower)
 parser.add_argument("--epoch", action="store", dest="epoch", type=int, default=25)
 parser.add_argument("--load_model", action="store_true", dest="load")
 parser.add_argument("--mini_testing_data", action="store_false", dest="all_testing_data")
