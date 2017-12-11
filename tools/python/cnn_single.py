@@ -5,6 +5,7 @@ import os
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--is_fashion", action="store_true", dest="is_fashion")
+parser.add_argument("--is_not_mnist", action="store_true", dest="is_not_mnist")
 parser.add_argument("--epoch", action="store", dest="epoch", type=int, default=25)
 parser.add_argument("--load_multi", action="store_true", dest="load_multi")
 parser.add_argument("--fresh", action="store_true", dest="fresh")
@@ -29,6 +30,10 @@ freeze_bottom = False
 fmnist_train_path = '../../../data/fashion_train.ocv'
 fmnist_test_path = '../../../data/fashion_test.ocv'
 
+# filepaths to the not mnist data
+nmnist_train_path = '../../../data/not_mnist_train.ocv'
+nmnist_test_path = '../../../data/not_mnist_test.ocv'
+
 # filepaths to the mnist data
 mnist_train_path = '../../../data/mnist_train.ocv'
 mnist_test_path = '../../../data/mnist_test.ocv'
@@ -40,6 +45,8 @@ serialized_mnist_single_model_path = "./single_model_1.json"
 serialized_mnist_single_weights_path = "./single_weights_1.h5"
 serialized_fashion_single_model_path = "./single_model_2.json"
 serialized_fashion_single_weights_path = "./single_weights_2.h5"
+serialized_not_mnist_single_model_path = "./single_model_3.json"
+serialized_not_mnist_single_weights_path = "./single_weights_3.h5"
 
 # hyper parameters 
 IMAGE_SIZE = 28
@@ -50,7 +57,7 @@ BATCH_SIZE = 100
 
 
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
-def fetch_data(is_fashion, testing):
+def fetch_data(is_fashion, is_not_mnist, testing):
     num_classes = 10
     
     # get only fashion mnit 
@@ -69,6 +76,23 @@ def fetch_data(is_fashion, testing):
         print ">>    Adjusting fashionMNIST labels"
         Y_train -= 10
         Y_test -= 10
+
+    # get only fashion mnit 
+    elif is_not_mnist:
+        print ">>    Fetching notMNIST dataset" 
+    
+        # load fashion mnist from file 
+        f_train_X, f_train_Y = load_file(nmnist_train_path, testing)
+        f_test_X, f_test_Y = load_file(nmnist_test_path, testing)
+
+        X_train = f_train_X
+        Y_train = f_train_Y
+        X_test = f_test_X
+        Y_test = f_test_Y
+
+        print ">>    Adjusting notMNIST labels"
+        Y_train -= 20
+        Y_test -= 20
 
     # get mnist data
     else:
@@ -145,10 +169,17 @@ def create_CNN_model():
     
     return model
 
-def save_pretrained_model(model, is_fashion):
-    model_save_path = serialized_fashion_single_model_path if is_fashion else serialized_mnist_single_model_path
-    weights_save_path = serialized_fashion_single_weights_path if is_fashion else serialized_mnist_single_weights_path
-    
+def save_pretrained_model(model, is_fashion, is_not_mnist):
+    if is_fashion:
+        model_save_path = serialized_fashion_single_model_path 
+        weights_save_path = serialized_fashion_single_weights_path
+    elif is_not_mnist:
+        model_save_path = serialized_not_mnist_single_model_path
+        weights_save_path = serialized_not_mnist_single_weights_path
+    else:
+        model_save_path = serialized_mnist_single_model_path
+        weights_save_path = serialized_mnist_single_weights_path
+
     # save the model
     print ">>   JSON path: {}".format(model_save_path)
     json_file = open(model_save_path, "w")
@@ -200,7 +231,7 @@ def convert_to_single_task(model):
     return compile_model(model)
 
 # Load model
-def load_model(load_multi, is_fashion, fresh):
+def load_model(load_multi, is_fashion, is_not_mnist, fresh):
     if load_multi:
         print ">> Loading multi-task model"
         model = load_pretrained_model(serialized_multitask_model_path, serialized_multitask_weights_path)
@@ -211,6 +242,9 @@ def load_model(load_multi, is_fashion, fresh):
     elif is_fashion:
         print ">> Loading fashionMNIST single-task model"
         model = load_pretrained_model(serialized_fashion_single_model_path, serialized_fashion_single_weights_path)
+    elif is_not_mnist:
+        print ">> Loading notMNIST single-task model"
+        model = load_pretrained_model(serialized_not_mnist_single_model_path, serialized_not_mnist_single_weights_path)
     else:
         print ">> Loading MNIST single-task model"
         model = load_pretrained_model(serialized_mnist_single_model_path, serialized_mnist_single_weights_path)
@@ -219,12 +253,12 @@ def load_model(load_multi, is_fashion, fresh):
 def main():
     # fetch the data - MNIST only 
     print ">> Fetching data ..."
-    X_train, Y_train, X_test, Y_test = fetch_data(args.is_fashion, args.all_testing_data)
+    X_train, Y_train, X_test, Y_test = fetch_data(args.is_fashion, args.is_not_mnist, args.all_testing_data)
 
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
 
     # build the multitask_model 
-    model = load_model(args.load_multi, args.is_fashion, args.fresh)
+    model = load_model(args.load_multi, args.is_fashion, args.is_not_mnist, args.fresh)
 
     # run training
     print ">> Start training"
@@ -237,7 +271,7 @@ def main():
     print ">> Training completed!"
 
     print ">> Saving model to disk"
-    save_pretrained_model(model,args.is_fashion)
+    save_pretrained_model(model,args.is_fashion, args.is_not_mnist)
     print ">> Model saved to disk"
     print "Done"
 
