@@ -60,7 +60,7 @@ BATCH_SIZE = 100
 def fetch_data(is_fashion, is_not_mnist, testing):
     num_classes = 10
     
-    # get only fashion mnit 
+    # get only fashion mnist 
     if is_fashion:
         print ">>    Fetching fashionMNIST dataset" 
     
@@ -77,18 +77,18 @@ def fetch_data(is_fashion, is_not_mnist, testing):
         Y_train -= 10
         Y_test -= 10
 
-    # get only fashion mnit 
+    # get only not mnist 
     elif is_not_mnist:
         print ">>    Fetching notMNIST dataset" 
     
-        # load fashion mnist from file 
-        f_train_X, f_train_Y = load_file(nmnist_train_path, testing)
-        f_test_X, f_test_Y = load_file(nmnist_test_path, testing)
+        # load not mnist from file 
+        n_train_X, n_train_Y = load_file(nmnist_train_path, testing)
+        n_test_X, n_test_Y = load_file(nmnist_test_path, testing)
 
-        X_train = f_train_X
-        Y_train = f_train_Y
-        X_test = f_test_X
-        Y_test = f_test_Y
+        X_train = n_train_X
+        Y_train = n_train_Y
+        X_test = n_test_X
+        Y_test = n_test_Y
 
         print ">>    Adjusting notMNIST labels"
         Y_train -= 20

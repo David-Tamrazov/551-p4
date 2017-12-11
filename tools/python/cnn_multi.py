@@ -54,7 +54,6 @@ BATCH_SIZE = 100
 def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False):
     num_classes = 10
     
-    # get only fashion mnit 
     if fashion_mnist:
         print ">>    Fetching fashionMNIST dataset"
     
@@ -67,8 +66,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
         X_test = f_test_X
         Y_test = f_test_Y
 
-    # get only not mnist
-    if fashion_mnist:
+    if not_mnist:
         print ">>    Fetching notMNIST dataset"
     
         # load not mnist from file 
@@ -80,7 +78,6 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
         X_test = n_test_X
         Y_test = n_test_Y
 
-    # get mnist data
     if mnist:
         print ">>    Fetching MNIST dataset"
     
@@ -93,8 +90,6 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
         X_test = m_test_X
         Y_test = m_test_Y
     
-   
-    # get both mnist and fashion mnist
     if mnist and fashion_mnist and not_mnist: 
         print ">>    Concatenating MNIST and fashionMNIST and notMNIST"
 
@@ -106,7 +101,6 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
         X_test = np.concatenate((m_test_X, f_test_X, n_test_X), axis=0)
         Y_test = np.concatenate((m_test_Y, f_test_Y, n_test_Y), axis=0)
 
-    # get both mnist and fashion mnist
     elif mnist and fashion_mnist: 
         print ">>    Concatenating MNIST and fashionMNIST"
 
@@ -118,19 +112,17 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
         X_test = np.concatenate((m_test_X, f_test_X), axis=0)
         Y_test = np.concatenate((m_test_Y, f_test_Y), axis=0)
 
-    # get both mnist and fashion mnist
     elif not_mnist and fashion_mnist: 
         print ">>    Concatenating notMNIST and fashionMNIST"
 
         num_classes = 20
 
-        # concatenate fashion mnist and mnist together
+        # concatenate fashion mnist and not mnist together
         X_train = np.concatenate((n_train_X, f_train_X), axis=0)
         Y_train = np.concatenate((n_train_Y, f_train_Y), axis=0)
         X_test = np.concatenate((n_test_X, f_test_X), axis=0)
         Y_test = np.concatenate((n_test_Y, f_test_Y), axis=0)
 
-    # get both mnist and fashion mnist
     elif not_mnist and mnist: 
         print ">>    Concatenating MNIST and notMNIST"
 
@@ -159,7 +151,6 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     Y_test = to_categorical(Y_test,num_classes=num_classes)
     
     return X_train, Y_train, X_test, Y_test
-
 
 
 # Loads and returns the image data found at the filepath 
