@@ -87,3 +87,4 @@ tags
 #model
 *.json
 *.h5
+*.log
