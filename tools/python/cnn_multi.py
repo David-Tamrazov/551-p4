@@ -115,7 +115,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     elif not_mnist and fashion_mnist: 
         print ">>    Concatenating notMNIST and fashionMNIST"
 
-        num_classes = 20
+        num_classes = 30
 
         # concatenate fashion mnist and not mnist together
         X_train = np.concatenate((n_train_X, f_train_X), axis=0)
@@ -126,7 +126,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     elif not_mnist and mnist: 
         print ">>    Concatenating MNIST and notMNIST"
 
-        num_classes = 20
+        num_classes = 30
 
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((n_train_X, m_train_X), axis=0)
@@ -196,13 +196,13 @@ def create_CNN_model():
     
     model.add(Conv2D(192, (3, 3) , strides = 1, activation ='relu'))
     model.add(Conv2D(192, (1, 1), strides = 1, activation = 'relu'))
-    model.add(Conv2D(20, (1, 1), strides = 2, activation = 'relu'))
+    model.add(Conv2D(30, (1, 1), strides = 2, activation = 'relu'))
     
     # Flatten
     model.add(Flatten())
     
     # add the final output softmax layer
-    model.add(Dense(20, activation ='softmax'))
+    model.add(Dense(30, activation ='softmax'))
     
     # set the model parameters
     compile_model(model)
