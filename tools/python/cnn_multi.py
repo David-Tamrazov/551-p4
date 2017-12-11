@@ -27,6 +27,10 @@ from keras.utils import to_categorical
 freeze_bottom = False
 
 # filepaths to the fashion mnist data
+nmnist_train_path = '../../../data/not_mnist_train.ocv'
+nmnist_test_path = '../../../data/not_mnist_test.ocv'
+
+# filepaths to the fashion mnist data
 fmnist_train_path = '../../../data/fashion_train.ocv'
 fmnist_test_path = '../../../data/fashion_test.ocv'
 
@@ -47,7 +51,7 @@ BATCH_SIZE = 100
 
 
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
-def fetch_data(fashion_mnist=False, mnist=False, testing=False):
+def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False):
     num_classes = 10
     
     # get only fashion mnit 
@@ -62,6 +66,19 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
         Y_train = f_train_Y
         X_test = f_test_X
         Y_test = f_test_Y
+
+    # get only not mnist
+    if fashion_mnist:
+        print ">>    Fetching notMNIST dataset"
+    
+        # load not mnist from file 
+        n_train_X, n_train_Y = load_file(nmnist_train_path, testing)
+        n_test_X, n_test_Y = load_file(nmnist_test_path, testing)
+
+        X_train = n_train_X
+        Y_train = n_train_Y
+        X_test = n_test_X
+        Y_test = n_test_Y
 
     # get mnist data
     if mnist:
@@ -78,7 +95,19 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
     
    
     # get both mnist and fashion mnist
-    if mnist and fashion_mnist: 
+    if mnist and fashion_mnist and not_mnist: 
+        print ">>    Concatenating MNIST and fashionMNIST and notMNIST"
+
+        num_classes = 30
+
+        # concatenate fashion mnist and mnist together
+        X_train = np.concatenate((m_train_X, f_train_X, n_train_X), axis=0)
+        Y_train = np.concatenate((m_train_Y, f_train_Y, n_train_Y), axis=0)
+        X_test = np.concatenate((m_test_X, f_test_X, n_test_X), axis=0)
+        Y_test = np.concatenate((m_test_Y, f_test_Y, n_test_Y), axis=0)
+
+    # get both mnist and fashion mnist
+    elif mnist and fashion_mnist: 
         print ">>    Concatenating MNIST and fashionMNIST"
 
         num_classes = 20
@@ -89,11 +118,41 @@ def fetch_data(fashion_mnist=False, mnist=False, testing=False):
         X_test = np.concatenate((m_test_X, f_test_X), axis=0)
         Y_test = np.concatenate((m_test_Y, f_test_Y), axis=0)
 
+    # get both mnist and fashion mnist
+    elif not_mnist and fashion_mnist: 
+        print ">>    Concatenating notMNIST and fashionMNIST"
+
+        num_classes = 20
+
+        # concatenate fashion mnist and mnist together
+        X_train = np.concatenate((n_train_X, f_train_X), axis=0)
+        Y_train = np.concatenate((n_train_Y, f_train_Y), axis=0)
+        X_test = np.concatenate((n_test_X, f_test_X), axis=0)
+        Y_test = np.concatenate((n_test_Y, f_test_Y), axis=0)
+
+    # get both mnist and fashion mnist
+    elif not_mnist and mnist: 
+        print ">>    Concatenating MNIST and notMNIST"
+
+        num_classes = 20
+
+        # concatenate fashion mnist and mnist together
+        X_train = np.concatenate((n_train_X, m_train_X), axis=0)
+        Y_train = np.concatenate((n_train_Y, m_train_Y), axis=0)
+        X_test = np.concatenate((n_test_X, m_test_X), axis=0)
+        Y_test = np.concatenate((n_test_Y, m_test_Y), axis=0)
+
     # rename labels if only fashion_mnist were used
-    if fashion_mnist and not mnist:
+    if fashion_mnist and not mnist and not not_mnist:
         print ">>    Adjusting fashionMNIST labels"
         Y_train = [x-10 for x in f_train_Y]
         Y_test = [x-10 for x in f_test_Y]
+
+    # rename labels if only not_mnist were used
+    if not fashion_mnist and not mnist and not_mnist:
+        print ">>    Adjusting notMNIST labels"
+        Y_train = [x-20 for x in n_train_Y]
+        Y_test = [x-20 for x in n_test_Y]
 
     # convert to categorical one hot vectors
     Y_train = to_categorical(Y_train,num_classes=num_classes)
@@ -189,7 +248,7 @@ def load_pretrained_model():
 def main():
     # fetch the data - MNIST only 
     print ">> Fetching data ..."
-    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" in args.train), fashion_mnist = ("f" in args.train), testing = args.all_testing_data)
+    X_train, Y_train, X_test, Y_test = fetch_data(mnist = ("m" in args.train), fashion_mnist = ("f" in args.train), not_mnist = ("n" in args.train), testing = args.all_testing_data)
     print ">> Data fetched successfully"
 
     # X_train, Y_train, X_test, Y_test = fetch_data(mnist = False)
