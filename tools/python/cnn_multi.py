@@ -23,6 +23,7 @@ from keras.models import model_from_json
 from keras.layers import Dense, Activation, Conv2D, Flatten
 from keras.optimizers import Adam as Adam
 from keras.utils import to_categorical
+from keras.applications.resnet50 import ResNet50
 
 freeze_bottom = False
 
@@ -44,15 +45,27 @@ serialized_multitask_weights_path = "./multitask_weights.h5"
 
 # hyper parameters 
 IMAGE_SIZE = 28
+RESNET_SCALER = 8
 EPOCHS = args.epoch
 LEARNING_RATE = args.learning_rate
 DECAY_RATE = LEARNING_RATE / EPOCHS
 BATCH_SIZE = 100
-
-
+NUM_CLASSES = 10
+#from sklearn.preprocessing import scale
+def scale_up(small, n):
+    #print [sma.shape for sma in small] 
+    #print [np.kron(sma, np.ones((n,n,1))) for sma in small][0].shape
+    #print np.array([np.kron(sma, np.ones((n,n,1))) for sma in small]).shape
+    #return np.array([np.kron(sma, np.ones((n,n,1))) for sma in small])i
+    large = []
+    for sma in small:
+        large.append (np.kron(sma, np.ones((n,n,1))))
+    #print np.array(large).shape
+    return np.array(large)
+	
 # function to fetch data - if testing = true, it'll fetch the entire dataset. otherwise it'll load the first 1000 lines
 def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False):
-    num_classes = 10
+    global NUM_CLASSES
     
     if fashion_mnist:
         print ">>    Fetching fashionMNIST dataset"
@@ -93,7 +106,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     if mnist and fashion_mnist and not_mnist: 
         print ">>    Concatenating MNIST and fashionMNIST and notMNIST"
 
-        num_classes = 30
+        NUM_CLASSES = 30
 
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((m_train_X, f_train_X, n_train_X), axis=0)
@@ -104,7 +117,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     elif mnist and fashion_mnist: 
         print ">>    Concatenating MNIST and fashionMNIST"
 
-        num_classes = 20
+        NUM_CLASSES = 20
 
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((m_train_X, f_train_X), axis=0)
@@ -115,7 +128,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     elif not_mnist and fashion_mnist: 
         print ">>    Concatenating notMNIST and fashionMNIST"
 
-        num_classes = 30
+        NUM_CLASSES = 30
 
         # concatenate fashion mnist and not mnist together
         X_train = np.concatenate((n_train_X, f_train_X), axis=0)
@@ -126,7 +139,7 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
     elif not_mnist and mnist: 
         print ">>    Concatenating MNIST and notMNIST"
 
-        num_classes = 30
+        NUM_CLASSES = 30
 
         # concatenate fashion mnist and mnist together
         X_train = np.concatenate((n_train_X, m_train_X), axis=0)
@@ -147,9 +160,13 @@ def fetch_data(fashion_mnist=False, not_mnist=False, mnist=False, testing=False)
         Y_test = [x-20 for x in n_test_Y]
 
     # convert to categorical one hot vectors
-    Y_train = to_categorical(Y_train,num_classes=num_classes)
-    Y_test = to_categorical(Y_test,num_classes=num_classes)
-    
+    Y_train = to_categorical(Y_train,num_classes=NUM_CLASSES)
+    Y_test = to_categorical(Y_test,num_classes=NUM_CLASSES)
+   
+ 
+    print ">>    Scaling images"
+    X_train = scale_up(X_train, RESNET_SCALER)
+    X_test  = scale_up(X_test,  RESNET_SCALER)
     return X_train, Y_train, X_test, Y_test
 
 
@@ -158,7 +175,8 @@ def load_file(filepath, testing):
     
     # read the image file 
     if testing:
-        tmp = pd.read_csv(filepath, sep=' ', skiprows=1).values; 
+        #training on 1000 first
+        tmp = pd.read_csv(filepath, sep=' ', nrows=1000, skiprows=1).values; 
     else:
         tmp = pd.read_csv(filepath, sep=' ', nrows=10, skiprows=1).values; 
     
@@ -177,14 +195,18 @@ def load_file(filepath, testing):
 # outlined this function to compile all models with the same parameter
 # TODO may need to modify according to the paper
 def compile_model(model):
+    print ">> Compiling ResNet..."
     model.compile(Adam(lr = LEARNING_RATE, decay=DECAY_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
     return model
-    
+
+from keras.applications.resnet50 import preprocess_input, decode_predictions 
 def create_CNN_model():
     
     # initialize a sequential model
-    model = Sequential()
-    
+    model = ResNet50(weights=None, classes=NUM_CLASSES, include_top=True,input_shape=[IMAGE_SIZE*RESNET_SCALER, IMAGE_SIZE*RESNET_SCALER, 1])  #Sequential()
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+    return model
+
     # build the architecture
     model.add(Conv2D(96, (3, 3), input_shape = [IMAGE_SIZE, IMAGE_SIZE, 1], strides = 1, activation ='relu'))
     model.add(Conv2D(96, (3, 3), strides = 1, activation = 'relu'))
