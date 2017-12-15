@@ -180,7 +180,7 @@ def compile_model(model):
     model.compile(Adam(lr = LEARNING_RATE, decay=DECAY_RATE), loss = 'categorical_crossentropy', metrics=['accuracy'])
     return model
     
-def create_CNN_model():
+def create_CNN_model(is_not_mnist):
     
     # initialize a sequential model
     model = Sequential()
@@ -196,13 +196,19 @@ def create_CNN_model():
     
     model.add(Conv2D(192, (3, 3) , strides = 1, activation ='relu'))
     model.add(Conv2D(192, (1, 1), strides = 1, activation = 'relu'))
-    model.add(Conv2D(30, (1, 1), strides = 2, activation = 'relu'))
+    if is_not_mnist:
+        model.add(Conv2D(30, (1, 1), strides = 2, activation = 'relu'))
+    else:
+        model.add(Conv2D(20, (1, 1), strides = 2, activation = 'relu'))
     
     # Flatten
     model.add(Flatten())
     
     # add the final output softmax layer
-    model.add(Dense(30, activation ='softmax'))
+    if is_not_mnist:
+        model.add(Dense(30, activation ='softmax'))
+    else:
+        model.add(Dense(20, activation ='softmax'))
     
     # set the model parameters
     compile_model(model)
@@ -253,7 +259,7 @@ def main():
         multitask_model = load_pretrained_model()
     else:
         print ">> Creating a new CNN model"
-        multitask_model = create_CNN_model()
+        multitask_model = create_CNN_model(("n" in args.train))
         print ">> Checking if model files already exist on disk"
         if os.path.exists(serialized_multitask_model_path) or os.path.exists(serialized_multitask_weights_path):
             while(True):
